@@ -71,6 +71,7 @@ class Exam:
     # Function to run the exam
     def run(self):
         num_of_questions = len(self._questions)
+        num_of_correct = 0
         # Loop through every question in the questions list
         for question_index, question in enumerate(self._questions):
             num_of_options = len(question.options)
@@ -87,14 +88,15 @@ class Exam:
             # Set values for later results
             question.guess = question.options[choice - 1]
             question.correct = question.guess == question.answer
+            num_of_correct += 1
             # Clear the screen
             clear()
         # Print the results
-        print(f"Results\nCorrect: {len(correct)}/{num_of_questions}\n")
+        print(f"Results\nCorrect: {num_of_correct}/{num_of_questions}\n")
         # Print every incorrect question
         for question in self._questions:
             if not question.correct:
-                print(f"{question}\nYou guessed: {lst[1]}\nCorrect answer: {question.answer}\n")
+                print(f"{question}\nYou guessed: {question.guess}\nCorrect answer: {question.answer}\n")
 
 
 # Function to clear the screen
