@@ -70,6 +70,7 @@ class Exam:
 
     # Function to run the exam
     def run(self):
+        clear()
         num_of_questions = len(self._questions)
         num_of_correct = 0
         # Loop through every question in the questions list
@@ -79,12 +80,19 @@ class Exam:
             # Make sure they enter a valid integer
             while True:
                 try:
-                    choice = int(input("> "))
-                    if 0 < choice <= num_of_options:
+                    choice = input("> ")
+                    if choice == "quit" or choice == "exit":
+                        exit(0)
+                    if 0 < int(choice) <= num_of_options:
                         break
                     print(f"Pick 1-{num_of_options}")
                 except ValueError:
                     print(f"Pick 1-{num_of_options}")
+                except KeyboardInterrupt:
+                    print()
+                except EOFError:
+                    print()
+                    exit(0)
             # Set values for later results
             question.guess = question.options[choice - 1]
             question.correct = question.guess == question.answer
