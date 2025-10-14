@@ -8,6 +8,8 @@ class Question:
         self.options = options
         self.question = question
         self.answer = answer
+        self.guess = None
+        self.correct = None
 
     # Override the toString function for the Question
     def __str__(self):
@@ -20,24 +22,24 @@ class Question:
 class Exam:
     # Initialization of Exam class
     def __init__(self, exam_file):
-        self.__exam_file = exam_file
-        self.__questions = self.__create_questions()
+        self._exam_file = exam_file
+        self._questions = self._create_questions()
 
     # Private function to get the answer key from a question object
-    def __get_answer_key(self):
+    def _get_answer_key(self):
         answers = []
-        for question in self.__questions:
+        for question in self._questions:
             answers.append(question.answer)
         return answers
 
     # Private function to create a list of Question objects
-    def __create_questions(self):
+    def _create_questions(self):
         question = None
         options = []
         answer = None
         questions = []
         # Open the plain text file
-        with open(self.__exam_file) as fp:
+        with open(self._exam_file) as fp:
             # For every line in the file
             for line in fp:
                 # Remove the start of the line
@@ -68,12 +70,9 @@ class Exam:
 
     # Function to run the exam
     def run(self):
-        num_of_questions = len(self.__questions)
-        # TODO: Could make another class for this? Or use Question again?
-        correct = []
-        # im lazy so lets make this jank by nested lists [question, given answer]
-        incorrect = []
-        for question_index, question in enumerate(self.__questions):
+        num_of_questions = len(self._questions)
+        # Loop through every question in the questions list
+        for question_index, question in enumerate(self._questions):
             num_of_options = len(question.options)
             print(f"Question {question_index + 1}/{num_of_questions}\n{question}")
             # Make sure they enter a valid integer
@@ -85,22 +84,17 @@ class Exam:
                     print(f"Pick 1-{num_of_options}")
                 except ValueError:
                     print(f"Pick 1-{num_of_options}")
-            # Set chosen_answer
-            chosen_answer = question.options[choice - 1]
-            # Append the question to either correct or incorrect
-            if chosen_answer == question.answer:
-                # TODO: Why append and not simply add to a number?
-                correct.append(question)
-            else:
-                incorrect.append([question, chosen_answer])
+            # Set values for later results
+            question.guess = question.options[choice - 1]
+            question.correct = question.guess == question.answer
+            # Clear the screen
             clear()
         # Print the results
         print(f"Results\nCorrect: {len(correct)}/{num_of_questions}\n")
         # Print every incorrect question
-        for question in self.__questions:
-            for lst in incorrect:
-                if question in lst:
-                    print(f"{question}\nYou guessed: {lst[1]}\nCorrect answer: {question.answer}\n")
+        for question in self._questions:
+            if not question.correct:
+                print(f"{question}\nYou guessed: {lst[1]}\nCorrect answer: {question.answer}\n")
 
 
 # Function to clear the screen
