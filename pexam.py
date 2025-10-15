@@ -43,11 +43,11 @@ class Exam:
         answer = None
         questions = []
         # Open the plain text file
-        if self._encoding == "default":
-            opened_file = open(self._exam_file)
-        else:
-            opened_file = open(self._exam_file, encoding=self._encoding)
         try:
+            if self._encoding == "default":
+                opened_file = open(self._exam_file)
+            else:
+                opened_file = open(self._exam_file, encoding=self._encoding)
             with opened_file as fp:
                 # For every line in the file
                 for line in fp:
