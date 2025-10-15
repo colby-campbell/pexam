@@ -6,7 +6,7 @@ import argparse
 
 class Question:
     # Initialization of the Question class
-    def __init__(self, options, question, answer):
+    def __init__(self, options: list[str], question: str, answer: str) -> None:
         self.options = options
         self.question = question
         self.answer = answer
@@ -14,7 +14,7 @@ class Question:
         self.correct = None
 
     # Override the toString function for the Question
-    def __str__(self):
+    def __str__(self) -> str:
         text = self.question
         for index, option in enumerate(self.options):
             text = text + "\n" + str(index + 1) + ": " + option
@@ -23,21 +23,21 @@ class Question:
 
 class Exam:
     # Initialization of Exam class
-    def __init__(self, exam_file, encoding, clearer):
+    def __init__(self, exam_file: str, encoding: str, clearer) -> None:
         self._exam_file = exam_file
         self._encoding = encoding
         self._clearer = clearer
         self._questions = self._create_questions()
 
     # Private function to get the answer key from a question object
-    def _get_answer_key(self):
+    def _get_answer_key(self) -> str:
         answers = []
         for question in self._questions:
             answers.append(question.answer)
         return answers
 
     # Private function to create a list of Question objects
-    def _create_questions(self):
+    def _create_questions(self) -> list[Question]:
         question = None
         options = []
         answer = None
@@ -102,7 +102,7 @@ class Exam:
         return questions
 
     # Function to run the exam
-    def run(self):
+    def run(self) -> None:
         self._clearer()
         num_of_questions = len(self._questions)
         num_of_correct = 0
@@ -122,11 +122,15 @@ class Exam:
                     print(f"Pick 1-{num_of_options}")
                 except ValueError:
                     print(f"Pick 1-{num_of_options}")
-                except KeyboardInterrupt:
-                    print()
-                except EOFError:
-                    print()
-                    exit(0)
+                except (KeyboardInterrupt, EOFError) as e:
+                    # Try to tidy up the line, but don't die if interrupted
+                    try:
+                        print()
+                    except:
+                        pass
+                    # If an EOFError, exit
+                    if isinstance(e, EOFError):
+                        exit(0)
             # Set values for later results
             question.guess = question.options[choice - 1]
             question.correct = question.guess == question.answer
@@ -141,20 +145,38 @@ class Exam:
                 print(f"{question}\nYou guessed: {question.guess}\nCorrect answer: {question.answer}\n")
 
 
-# Function to clear the screen
-def clear():
-    # ^L
-    print("\033c", end="", flush=True)
+# Function that contains all possible clear functions
+# When make_clearer is called, it returns the clear function to be used
+def make_clearer(mode: str, spacer_lines: int):
+    def clear_ctrl_l():
+        print("\033[2J\033[H", end="", flush=True)
 
+    def clear_full():
+        print("\033c", end="", flush=True)
+
+    def clear_none():
+        print(flush=True)
+
+    def clear_spacer():
+        print("\n" * spacer_lines, end="", flush=True)
+
+    # Return the function based on the input mode
+    return {
+        "ctrl-l": clear_ctrl_l,
+        "full":   clear_full,
+        "none":   clear_none,
+        "spacer": clear_spacer,
+    }[mode]
+    
 
 # Returns the parsed args
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="A Linux-friendly Python CLI tool that generates practice exams from a plain-text file of questions and answers.")
     parser.add_argument("file", help="the path to the Q/A plain-text file")
     parser.add_argument("--clear",
                         choices=["ctrl-l", "full", "none", "spacer"],
-                        default="ctrl-l",
-                        help="How to clear between questions (default: ctrl-l)")
+                        default="full",
+                        help="How to clear between questions (default: full)")
     parser.add_argument("--spacer-lines", type=int, default=8,
                 help="Lines to print if --clear=spacer (default: 8)")
     parser.add_argument("--encoding", default="default",
@@ -162,8 +184,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
+    clear = make_clearer(args.clear, args.spacer_lines)
     exam = Exam(args.file, args.encoding, clear)
     exam.run()
 
