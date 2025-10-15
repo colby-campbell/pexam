@@ -90,8 +90,12 @@ class Exam:
             print(msg)
             # Exit code 65 is for a data format error
             exit(65)
+        except LookupError:
+            print(f"pexam: {self._encoding}: unknown encoding")
+            # Exit code 64 is for a command line usage error
+            exit(64)
         except FileNotFoundError:
-            print(f"pexam: {self._exam_file}: No such file or directory")
+            print(f"pexam: {self._exam_file}: no such file or directory")
             # Exit code 66 is for a cannot open input error
             exit(66)
         # Return the completed questions list
