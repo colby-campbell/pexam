@@ -38,9 +38,6 @@ class Exam:
 
     # Private function to create a list of Question objects
     def _create_questions(self) -> list[Question]:
-        question = None
-        options = []
-        answer = None
         questions = []
         # Open the plain text file
         try:
@@ -50,7 +47,10 @@ class Exam:
                 opened_file = open(self._exam_file, encoding=self._encoding)
             with opened_file as fp:
                 # For every line in the file
-                for line in fp:
+                for line_index, line in enumerate(fp):
+                    question = None
+                    options = []
+                    answer = None
                     # Remove the start of the line
                     # TODO: could this fail?
                     mod_line = line.strip()[2:].strip()
@@ -60,9 +60,9 @@ class Exam:
                             questions.append(Question(options.copy(), question, answer))
                             options.clear()
                         elif question and not answer:
-                            options.clear()
-                            # TODO: what should I do?
-                            print("Question without an answer included")
+                            print(f"pexam: {self._exam_file}:{line_index + 1}: question without an answer")
+                            # Exit code 65 is for a data format error
+                            exit(65)
                         # Set the question to the modified line
                         question = mod_line
                     # If the line is an answer, append the modified line to options
@@ -70,8 +70,12 @@ class Exam:
                         options.append(mod_line)
                     # If the line is the corerct answer, append the modified line to options and set answer to it
                     elif line.startswith("~C"):
-                        options.append(mod_line)
-                        answer = mod_line
+                        if mod_line:
+                            options.append(mod_line)
+                            answer = mod_line
+                        else:
+                            print(f"pexam: {self._exam_file}:{line_index + 1}: question with multiple answers")
+
                 # TODO: could this fail?
                 questions.append(Question(options.copy(), question, answer))
         except UnicodeDecodeError:
@@ -172,21 +176,27 @@ def make_clearer(mode: str, spacer_lines: int):
 # Returns the parsed args
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="A Linux-friendly Python CLI tool that generates practice exams from a plain-text file of questions and answers.")
-    parser.add_argument("file", help="the path to the Q/A plain-text file")
-    parser.add_argument("--clear",
+    parser.add_argument("file",
+                        help="the path to the Q/A plain-text file")
+    # parser.add_argument("-c", "--color", "--colour",
+    #                     help="Add colour to pexam")
+    parser.add_argument("-r", "--refresh",
                         choices=["ctrl-l", "full", "none", "spacer"],
                         default="full",
-                        help="How to clear between questions (default: full)")
-    parser.add_argument("--spacer-lines", type=int, default=8,
-                help="Lines to print if --clear=spacer (default: 8)")
-    parser.add_argument("--encoding", default="default",
+                        help="How to refresh between questions (default: full)")
+    parser.add_argument("--spacer-lines",
+                        type=int,
+                        default=8,
+                        help="Lines to print if --clear=spacer (default: 8)")
+    parser.add_argument("-e", "--encoding",
+                        default="default",
                         help=f"File encoding (default: system's preference: {locale.getpreferredencoding()})")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    clear = make_clearer(args.clear, args.spacer_lines)
+    clear = make_clearer(args.refresh, args.spacer_lines)
     exam = Exam(args.file, args.encoding, clear)
     exam.run()
 
