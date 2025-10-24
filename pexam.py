@@ -138,7 +138,8 @@ class Exam:
             # Set values for later results
             question.guess = question.options[choice - 1]
             question.correct = question.guess == question.answer
-            num_of_correct += 1
+            if (question.correct):
+                num_of_correct += 1
             # Clear the screen
             self._clearer()
         # Print the results
