@@ -2,6 +2,7 @@ import os
 import sys
 import locale
 import argparse
+from enum import Enum
 
 
 class Question:
@@ -23,10 +24,11 @@ class Question:
 
 class Exam:
     # Initialization of Exam class
-    def __init__(self, exam_file: str, encoding: str, clearer) -> None:
+    def __init__(self, exam_file: str, encoding: str, clearer, colour) -> None:
         self._exam_file = exam_file
         self._encoding = encoding
         self._clearer = clearer
+        self.colour = colour
         self._questions = self._create_questions()
 
     # Private function to get the answer key from a question object
@@ -150,9 +152,17 @@ class Exam:
                 print(f"{question}\nYou guessed: {question.guess}\nCorrect answer: {question.answer}\n")
 
 
+# Enum used for deciding mode for clear
+class ClearMode(Enum):
+    CTRL_L = 0
+    FULL = 1
+    NONE = 2
+    SPACER = 3
+
+
 # Function that contains all possible clear functions
 # When make_clearer is called, it returns the clear function to be used
-def make_clearer(mode: str, spacer_lines: int):
+def make_clearer(mode: ClearMode, spacer_lines: int):
     def clear_ctrl_l():
         print("\033[2J\033[H", end="", flush=True)
 
@@ -167,11 +177,41 @@ def make_clearer(mode: str, spacer_lines: int):
 
     # Return the function based on the input mode
     return {
-        "ctrl-l": clear_ctrl_l,
-        "full":   clear_full,
-        "none":   clear_none,
-        "spacer": clear_spacer,
+        ClearMode.CTRL_L: clear_ctrl_l,
+        ClearMode.FULL:   clear_full,
+        ClearMode.NONE:   clear_none,
+        ClearMode.SPACER: clear_spacer,
     }[mode]
+
+
+# Enum used for deciding colour to print
+class Colour(Enum):
+    RED = "\e[0;31m"
+    GREEN = "\e[0;32m"
+    BLUE = "\e[0;34m"
+    RESET = "\e[0m"
+
+
+# Enum used for deciding mode for colour
+class ColourMode(Enum):
+    DISABLED = 0
+    ENABLED = 1
+
+
+# Function that contains the possible colour functions
+# When make_colour is called, it returns the colour function to be used
+def make_colour(mode: ColourMode):
+    def colour_enabled(text: str, code: Colour):
+        print(f"{code.value}{text}{Colour.RESET.value}")
+    
+    def colour_disabled(text: str, code: Colour):
+        print(text)
+
+    # Return the function based on the input mode
+    return {
+        ColourMode.DISABLED: colour_disabled,
+        ColourMode.ENABLED: colour_enabled
+    }
     
 
 # Returns the parsed args
@@ -179,8 +219,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="A Linux-friendly Python CLI tool that generates practice exams from a plain-text file of questions and answers.")
     parser.add_argument("file",
                         help="the path to the Q/A plain-text file")
-    # parser.add_argument("-c", "--color", "--colour",
-    #                     help="Add colour to pexam")
+    parser.add_argument("-c", "--color", "--colour",
+                        help="Add colour to pexam")
     parser.add_argument("-r", "--refresh",
                         choices=["ctrl-l", "full", "none", "spacer"],
                         default="full",
@@ -198,7 +238,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     clear = make_clearer(args.refresh, args.spacer_lines)
-    exam = Exam(args.file, args.encoding, clear)
+    colour = make_colour(args.color)
+    exam = Exam(args.file, args.encoding, clear, colour)
     exam.run()
 
 
