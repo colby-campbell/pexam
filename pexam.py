@@ -85,13 +85,13 @@ class Exam:
                 system_encoding = locale.getpreferredencoding()
                 msg = (
                     f"pexam: {self._exam_file}: decode error with system's preferred encoding ({system_encoding})\n"
-                    f"  note: save the file as {system_encoding}, or run with --encoding ENCODING\n"
+                    f"  note: save the file as {system_encoding}, or run with --encoding matching the file's encoding\n"
                     "  hint: if on Windows shell, run with --encoding utf-8-sig"
                 )
             else:
                 msg = (
                 f"pexam: {self._exam_file}: decode error with user specified encoding ({self._encoding})\n"
-                f"  note: save the file as {self._encoding}, or run with --encoding ENCODING"
+                f"  note: save the file as {self._encoding}, or run specific encoding with --encoding matching the file's encoding"
                 )
             print(msg)
             # Exit code 65 is for a data format error
@@ -152,17 +152,9 @@ class Exam:
                 print(f"{question}\nYou guessed: {question.guess}\nCorrect answer: {question.answer}\n")
 
 
-# Enum used for deciding mode for clear
-class ClearMode(Enum):
-    CTRL_L = 0
-    FULL = 1
-    NONE = 2
-    SPACER = 3
-
-
 # Function that contains all possible clear functions
 # When make_clearer is called, it returns the clear function to be used
-def make_clearer(mode: ClearMode, spacer_lines: int):
+def make_clearer(mode: str, spacer_lines: int):
     def clear_ctrl_l():
         print("\033[2J\033[H", end="", flush=True)
 
@@ -177,10 +169,10 @@ def make_clearer(mode: ClearMode, spacer_lines: int):
 
     # Return the function based on the input mode
     return {
-        ClearMode.CTRL_L: clear_ctrl_l,
-        ClearMode.FULL:   clear_full,
-        ClearMode.NONE:   clear_none,
-        ClearMode.SPACER: clear_spacer,
+        "ctrl-l": clear_ctrl_l,
+        "full":   clear_full,
+        "none":   clear_none,
+        "spacer": clear_spacer,
     }[mode]
 
 
@@ -192,15 +184,9 @@ class Colour(Enum):
     RESET = "\e[0m"
 
 
-# Enum used for deciding mode for colour
-class ColourMode(Enum):
-    DISABLED = 0
-    ENABLED = 1
-
-
 # Function that contains the possible colour functions
 # When make_colour is called, it returns the colour function to be used
-def make_colour(mode: ColourMode):
+def make_colour(mode: bool):
     def colour_enabled(text: str, code: Colour):
         print(f"{code.value}{text}{Colour.RESET.value}")
     
@@ -209,8 +195,8 @@ def make_colour(mode: ColourMode):
 
     # Return the function based on the input mode
     return {
-        ColourMode.DISABLED: colour_disabled,
-        ColourMode.ENABLED: colour_enabled
+        False: colour_disabled,
+        True:  colour_enabled
     }
     
 
@@ -220,6 +206,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("file",
                         help="the path to the Q/A plain-text file")
     parser.add_argument("-c", "--color", "--colour",
+                        action='store_true',
                         help="Add colour to pexam")
     parser.add_argument("-r", "--refresh",
                         choices=["ctrl-l", "full", "none", "spacer"],
