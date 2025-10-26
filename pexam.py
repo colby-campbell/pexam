@@ -14,11 +14,11 @@ class Question:
         self.guess = None
         self.correct = None
 
-    # Override the toString function for the Question
-    def __str__(self) -> str:
-        text = self.question
+    # Override the toString function for the Question with an argument for the colour function
+    def to_str(self, colour) -> str:
+        text = colour(self.question, Colour.QUESTION)
         for index, option in enumerate(self.options):
-            text = text + "\n" + str(index + 1) + ": " + option
+            text = text + "\n" + colour(str(index + 1) + ": ", Colour.NUMBERS) + colour(option, Colour.OPTIONS)
         return text
 
 
@@ -48,11 +48,11 @@ class Exam:
             else:
                 opened_file = open(self._exam_file, encoding=self._encoding)
             with opened_file as fp:
+                question = None
+                options = []
+                answer = None
                 # For every line in the file
                 for line_index, line in enumerate(fp):
-                    question = None
-                    options = []
-                    answer = None
                     # Remove the start of the line
                     # TODO: could this fail?
                     mod_line = line.strip()[2:].strip()
@@ -115,7 +115,7 @@ class Exam:
         # Loop through every question in the questions list
         for question_index, question in enumerate(self._questions):
             num_of_options = len(question.options)
-            print(f"Question {question_index + 1}/{num_of_questions}\n{question}")
+            print(self.colour(f"Question {question_index + 1}/{num_of_questions}\n{question.to_str(self.colour)}", Colour.HEADER))
             # Make sure they enter a valid integer
             while True:
                 try:
@@ -149,7 +149,9 @@ class Exam:
         # Print every incorrect question
         for question in self._questions:
             if not question.correct:
-                print(f"{question}\nYou guessed: {question.guess}\nCorrect answer: {question.answer}\n")
+                incorr = self.colour("You guessed:", Colour.INCORRECT)
+                corr = self.colour("Correct answer:", Colour.CORRECT)
+                print(f"{question.to_str(self.colour)}\n{incorr} {question.guess}\n{corr} {question.answer}\n")
 
 
 # Function that contains all possible clear functions
@@ -178,26 +180,29 @@ def make_clearer(mode: str, spacer_lines: int):
 
 # Enum used for deciding colour to print
 class Colour(Enum):
-    RED = "\e[0;31m"
-    GREEN = "\e[0;32m"
-    BLUE = "\e[0;34m"
-    RESET = "\e[0m"
+    HEADER = "\033[38;5;32m"
+    QUESTION = "\033[38;5;104m"
+    NUMBERS = "\033[38;5;246m"
+    OPTIONS = "\033[38;5;252m"
+    CORRECT = "\033[38;5;114m"
+    INCORRECT = "\033[38;5;131m"
+    RESET = "\033[0m"
 
 
 # Function that contains the possible colour functions
 # When make_colour is called, it returns the colour function to be used
 def make_colour(mode: bool):
-    def colour_enabled(text: str, code: Colour):
-        print(f"{code.value}{text}{Colour.RESET.value}")
+    def colour_enabled(text: str, code: Colour) -> str:
+        return f"{code.value}{text}{Colour.RESET.value}"
     
-    def colour_disabled(text: str, code: Colour):
-        print(text)
+    def colour_disabled(text: str, code: Colour) -> str:
+        return text
 
     # Return the function based on the input mode
     return {
         False: colour_disabled,
         True:  colour_enabled
-    }
+    }[mode]
     
 
 # Returns the parsed args
